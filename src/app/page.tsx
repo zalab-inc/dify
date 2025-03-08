@@ -9,6 +9,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import ConversationManager from './components/ConversationManager';
 import ExportButton from './components/ExportButton';
 import FileUploadButton from './components/FileUploadButton';
+import Sidebar from './components/Sidebar';
 
 interface FileReference {
   name: string;
@@ -22,6 +23,7 @@ export default function Home() {
   const [model, setModel] = useState('gpt-3.5-turbo');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<FileReference[]>([]);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState('');
@@ -128,6 +130,11 @@ export default function Home() {
     reload();
   };
 
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   // Close export menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -167,8 +174,37 @@ export default function Home() {
 
   return (
     <main className="flex h-screen flex-col bg-background text-foreground">
+      <Sidebar
+        currentMessages={messages}
+        currentFiles={uploadedFiles}
+        onLoadConversation={handleLoadConversation}
+        onNewConversation={handleClearChat}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h1 className="text-xl font-bold">AI Chatbot</h1>
+        <div className="flex items-center">
+          <button
+            onClick={toggleSidebar}
+            className="mr-3 rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Toggle sidebar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+            >
+              <path d="M3 12h18M3 6h18M3 18h18" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold">AI Chatbot</h1>
+        </div>
         <div className="flex space-x-2">
           <ThemeToggle />
           <FileUploadButton onFileContent={handleFileContent} />
@@ -227,18 +263,20 @@ export default function Home() {
         </div>
       </header>
 
-      <ChatDisplay
-        messages={messages}
-        isLoading={isLoading}
-        onStopGenerating={handleStopGenerating}
-        onRegenerateResponse={handleRegenerateResponse}
-      />
-      <ChatInput
-        input={input}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-        isLoading={isLoading}
-      />
+      <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <ChatDisplay
+          messages={messages}
+          isLoading={isLoading}
+          onStopGenerating={handleStopGenerating}
+          onRegenerateResponse={handleRegenerateResponse}
+        />
+        <ChatInput
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          isLoading={isLoading}
+        />
+      </div>
 
       <ChatSettings
         temperature={temperature}
