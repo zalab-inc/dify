@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useChat } from 'ai/react';
+import { useSession, signOut } from 'next-auth/react';
 import ChatDisplay from './components/ChatDisplay';
 import ChatInput from './components/ChatInput';
 import ChatSettings from './components/ChatSettings';
@@ -10,6 +11,7 @@ import ConversationManager from './components/ConversationManager';
 import ExportButton from './components/ExportButton';
 import FileUploadButton from './components/FileUploadButton';
 import Sidebar from './components/Sidebar';
+import { UserRole } from './api/auth/[...nextauth]/route';
 
 interface FileReference {
   name: string;
@@ -18,6 +20,10 @@ interface FileReference {
 }
 
 export default function Home() {
+  // Get session data
+  const { data: session } = useSession();
+  const userRole = session?.user?.role as UserRole;
+
   // Chat settings state
   const [temperature, setTemperature] = useState(0.7);
   const [model, setModel] = useState('gpt-3.5-turbo');
@@ -27,6 +33,7 @@ export default function Home() {
   const [uploadedFiles, setUploadedFiles] = useState<FileReference[]>([]);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   // Initialize chat with localStorage history if available
   const localStorageKey = 'chat-history';
@@ -151,6 +158,16 @@ export default function Home() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Toggle user menu
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(!isUserMenuOpen);
+  };
+
+  // Handle sign out
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/auth/signin' });
+  };
+
   // Close export menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -188,12 +205,40 @@ export default function Home() {
     };
   }, []);
 
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-user-menu]') && isUserMenuOpen) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
+
   // Get model provider for display
   const getModelProvider = () => {
     if (model.startsWith('claude')) {
       return 'Anthropic';
     }
     return 'OpenAI';
+  };
+
+  // Get role display name
+  const getRoleDisplayName = (role: UserRole) => {
+    switch (role) {
+      case UserRole.ADMIN:
+        return 'Administrator';
+      case UserRole.ANALYST:
+        return 'Analyst';
+      case UserRole.USER:
+      default:
+        return 'User';
+    }
   };
 
   return (
@@ -232,7 +277,7 @@ export default function Home() {
             {getModelProvider()}
           </span>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 items-center">
           <ThemeToggle />
           <FileUploadButton onFileContent={handleFileContent} />
           <ExportButton messages={messages} />
@@ -287,6 +332,65 @@ export default function Home() {
               />
             </svg>
           </button>
+
+          {/* User menu */}
+          <div className="relative" data-user-menu>
+            <button
+              onClick={toggleUserMenu}
+              className="flex items-center rounded-full bg-primary/10 px-3 py-1.5 text-sm text-primary hover:bg-primary/20"
+            >
+              <span className="mr-2">{session?.user?.name}</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-4 w-4"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+
+            {isUserMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-md border border-border bg-background shadow-lg">
+                <div className="p-2">
+                  <div className="mb-2 border-b border-border pb-2 text-xs text-muted-foreground">
+                    Signed in as <span className="font-medium">{session?.user?.email}</span>
+                  </div>
+                  <div className="mb-2 text-xs text-muted-foreground">
+                    Role: <span className="font-medium">{getRoleDisplayName(userRole)}</span>
+                  </div>
+                </div>
+                <div className="border-t border-border">
+                  {userRole === UserRole.ADMIN && (
+                    <a
+                      href="/admin"
+                      className="block px-4 py-2 text-sm hover:bg-secondary"
+                    >
+                      Admin Dashboard
+                    </a>
+                  )}
+                  {(userRole === UserRole.ADMIN || userRole === UserRole.ANALYST) && (
+                    <a
+                      href="/analytics"
+                      className="block px-4 py-2 text-sm hover:bg-secondary"
+                    >
+                      Analytics
+                    </a>
+                  )}
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-secondary"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
