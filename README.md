@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Chatbot with Next.js and Vercel AI SDK
+
+A modern, responsive AI chatbot application built with Next.js, Vercel AI SDK, and OpenAI.
+
+## Features
+
+- 💬 Real-time streaming responses from OpenAI
+- 🔄 Chat history saved in localStorage
+- ⚙️ Customizable AI parameters (temperature, model)
+- 📱 Responsive UI with Tailwind CSS
+- ⌨️ Typing animation for a more natural feel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18.x or later
+- OpenAI API key
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/chatbot-app.git
+cd chatbot-app
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env.local` file in the root directory and add your OpenAI API key:
+
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+chatbot-app/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── chat/
+│   │   │       └── route.ts  # API route for chat
+│   │   ├── components/
+│   │   │   ├── ChatDisplay.tsx  # Component for displaying chat messages
+│   │   │   ├── ChatInput.tsx    # Component for user input
+│   │   │   ├── ChatSettings.tsx # Component for AI settings
+│   │   │   └── Message.tsx      # Component for individual messages
+│   │   ├── layout.tsx
+│   │   └── page.tsx           # Main page component
+│   └── ...
+├── .env.local                 # Environment variables
+├── package.json
+└── ...
+```
 
-## Learn More
+## Technologies Used
 
-To learn more about Next.js, take a look at the following resources:
+- [Next.js](https://nextjs.org/) - React framework
+- [Vercel AI SDK](https://sdk.vercel.ai/docs) - AI utilities and hooks
+- [OpenAI API](https://openai.com/api/) - AI model provider
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Deploy on Vercel
+## Acknowledgments
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Vercel](https://vercel.com/) for the AI SDK
+- [OpenAI](https://openai.com/) for the AI models
