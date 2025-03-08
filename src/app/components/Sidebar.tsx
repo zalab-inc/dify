@@ -40,6 +40,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [newTitle, setNewTitle] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isRenaming, setIsRenaming] = useState<string | null>(null);
+    const [renameTitle, setRenameTitle] = useState('');
+    const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'alphabetical'>('newest');
     const { theme } = useTheme();
 
     // Load conversations from localStorage
@@ -97,11 +101,55 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
     };
 
+    // Rename conversation
+    const startRenaming = (id: string, currentTitle: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsRenaming(id);
+        setRenameTitle(currentTitle);
+    };
+
+    const saveRename = (id: string) => {
+        if (!renameTitle.trim()) {
+            alert('Please enter a title for the conversation');
+            return;
+        }
+
+        const updatedConversations = conversations.map(conv =>
+            conv.id === id
+                ? { ...conv, title: renameTitle, updatedAt: new Date().toISOString() }
+                : conv
+        );
+
+        setConversations(updatedConversations);
+        localStorage.setItem('conversations', JSON.stringify(updatedConversations));
+        setIsRenaming(null);
+        setRenameTitle('');
+    };
+
     // Load conversation
     const loadConversation = (conversation: Conversation) => {
         onLoadConversation(conversation.messages, conversation.files);
         setSelectedConversation(conversation.id);
     };
+
+    // Filter conversations based on search query
+    const filteredConversations = conversations.filter(
+        (conv) => conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort conversations
+    const sortedConversations = [...filteredConversations].sort((a, b) => {
+        switch (sortOrder) {
+            case 'newest':
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            case 'oldest':
+                return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+            case 'alphabetical':
+                return a.title.localeCompare(b.title);
+            default:
+                return 0;
+        }
+    });
 
     if (!isOpen) return null;
 
@@ -150,12 +198,118 @@ const Sidebar: React.FC<SidebarProps> = ({
                         New Chat
                     </button>
 
-                    <button
-                        onClick={() => setIsCreating(!isCreating)}
-                        className="w-full mb-2 text-sm text-left text-muted-foreground hover:text-foreground"
-                    >
-                        {isCreating ? 'Cancel' : 'Save current conversation'}
-                    </button>
+                    <div className="mb-4">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search conversations..."
+                                className="w-full p-2 pl-8 text-sm rounded-md border border-input bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 absolute left-2 top-2.5 text-muted-foreground"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="M21 21l-4.35-4.35" />
+                            </svg>
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mb-4 flex justify-between items-center">
+                        <button
+                            onClick={() => setIsCreating(!isCreating)}
+                            className="text-sm text-left text-muted-foreground hover:text-foreground"
+                        >
+                            {isCreating ? 'Cancel' : 'Save current conversation'}
+                        </button>
+
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    const menu = document.getElementById('sort-menu');
+                                    if (menu) menu.classList.toggle('hidden');
+                                }}
+                                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M3 6h18M7 12h10M11 18h4" />
+                                </svg>
+                            </button>
+                            <div
+                                id="sort-menu"
+                                className="absolute right-0 mt-1 w-40 rounded-md border border-border bg-background shadow-lg hidden z-10"
+                            >
+                                <div className="py-1">
+                                    <button
+                                        onClick={() => {
+                                            setSortOrder('newest');
+                                            document.getElementById('sort-menu')?.classList.add('hidden');
+                                        }}
+                                        className={`block w-full px-4 py-2 text-left text-sm ${sortOrder === 'newest' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+                                            }`}
+                                    >
+                                        Newest first
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setSortOrder('oldest');
+                                            document.getElementById('sort-menu')?.classList.add('hidden');
+                                        }}
+                                        className={`block w-full px-4 py-2 text-left text-sm ${sortOrder === 'oldest' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+                                            }`}
+                                    >
+                                        Oldest first
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setSortOrder('alphabetical');
+                                            document.getElementById('sort-menu')?.classList.add('hidden');
+                                        }}
+                                        className={`block w-full px-4 py-2 text-left text-sm ${sortOrder === 'alphabetical' ? 'bg-primary/10 text-primary' : 'hover:bg-secondary'
+                                            }`}
+                                    >
+                                        Alphabetical
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {isCreating && (
                         <div className="mb-4">
@@ -177,11 +331,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-2">
-                    {conversations.length === 0 ? (
-                        <p className="text-center text-sm text-muted-foreground p-4">No saved conversations</p>
+                    {sortedConversations.length === 0 ? (
+                        <p className="text-center text-sm text-muted-foreground p-4">
+                            {searchQuery ? 'No conversations found' : 'No saved conversations'}
+                        </p>
                     ) : (
                         <ul className="space-y-1">
-                            {conversations.map((conversation) => (
+                            {sortedConversations.map((conversation) => (
                                 <li
                                     key={conversation.id}
                                     onClick={() => loadConversation(conversation)}
@@ -190,29 +346,91 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             : 'hover:bg-secondary'
                                         }`}
                                 >
-                                    <div className="flex-1 truncate">
-                                        <p className="font-medium truncate">{conversation.title}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {new Date(conversation.updatedAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={(e) => deleteConversation(conversation.id, e)}
-                                        className="ml-2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-4 w-4"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                        </svg>
-                                    </button>
+                                    {isRenaming === conversation.id ? (
+                                        <div className="flex-1 pr-2">
+                                            <input
+                                                type="text"
+                                                value={renameTitle}
+                                                onChange={(e) => setRenameTitle(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveRename(conversation.id);
+                                                    if (e.key === 'Escape') {
+                                                        setIsRenaming(null);
+                                                        setRenameTitle('');
+                                                    }
+                                                }}
+                                                className="w-full p-1 text-sm rounded-md border border-input bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                                autoFocus
+                                            />
+                                            <div className="flex mt-1 space-x-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        saveRename(conversation.id);
+                                                    }}
+                                                    className="flex-1 rounded-sm bg-primary/80 px-2 py-0.5 text-xs text-primary-foreground hover:bg-primary"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsRenaming(null);
+                                                        setRenameTitle('');
+                                                    }}
+                                                    className="flex-1 rounded-sm bg-secondary px-2 py-0.5 text-xs hover:bg-secondary/80"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1 truncate">
+                                            <p className="font-medium truncate">{conversation.title}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {new Date(conversation.updatedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {isRenaming !== conversation.id && (
+                                        <div className="flex">
+                                            <button
+                                                onClick={(e) => startRenaming(conversation.id, conversation.title, e)}
+                                                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="h-3.5 w-3.5"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={(e) => deleteConversation(conversation.id, e)}
+                                                className="ml-1 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="h-3.5 w-3.5"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>
