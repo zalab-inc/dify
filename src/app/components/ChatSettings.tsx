@@ -18,7 +18,14 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
     isOpen,
     onClose,
 }) => {
-    const { typingAnimationEnabled, setTypingAnimationEnabled } = useSettings();
+    const {
+        typingAnimationEnabled,
+        setTypingAnimationEnabled,
+        fontSize,
+        setFontSize,
+        highContrastMode,
+        setHighContrastMode
+    } = useSettings();
 
     if (!isOpen) return null;
 
@@ -49,53 +56,113 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className="mb-4">
-                    <label className="mb-2 block font-medium" htmlFor="model">
-                        Model
-                    </label>
-                    <select
-                        id="model"
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="w-full rounded-lg border border-input bg-background p-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                    </select>
-                </div>
+                    <h3 className="mb-2 font-medium">Model Settings</h3>
+                    <div className="space-y-4 mb-4">
+                        <div>
+                            <label className="mb-2 block font-medium" htmlFor="model">
+                                Model
+                            </label>
+                            <select
+                                id="model"
+                                value={model}
+                                onChange={(e) => setModel(e.target.value)}
+                                className="w-full rounded-lg border border-input bg-background p-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                            </select>
+                        </div>
 
-                <div className="mb-4">
-                    <label className="mb-2 block font-medium">
-                        Temperature: {temperature.toFixed(1)}
-                    </label>
-                    <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={temperature}
-                        onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                        className="w-full accent-primary"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>More Precise</span>
-                        <span>More Creative</span>
+                        <div>
+                            <label className="mb-2 block font-medium">
+                                Temperature: {temperature.toFixed(1)}
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={temperature}
+                                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                                className="w-full accent-primary"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>More Precise</span>
+                                <span>More Creative</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="mb-6">
-                    <label className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            checked={typingAnimationEnabled}
-                            onChange={(e) => setTypingAnimationEnabled(e.target.checked)}
-                            className="h-4 w-4 rounded border-input accent-primary"
-                        />
-                        <span className="text-sm">Enable typing animation</span>
-                    </label>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        Disable this for improved accessibility or if you prefer instant responses.
-                    </p>
+                <div className="mb-4">
+                    <h3 className="mb-2 font-medium">Accessibility Settings</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={typingAnimationEnabled}
+                                    onChange={(e) => setTypingAnimationEnabled(e.target.checked)}
+                                    className="h-4 w-4 rounded border-input accent-primary"
+                                />
+                                <span className="text-sm">Enable typing animation</span>
+                            </label>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Disable this for improved accessibility or if you prefer instant responses.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={highContrastMode}
+                                    onChange={(e) => setHighContrastMode(e.target.checked)}
+                                    className="h-4 w-4 rounded border-input accent-primary"
+                                />
+                                <span className="text-sm">High contrast mode</span>
+                            </label>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Enable this for improved visibility with higher contrast colors.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-medium">
+                                Font Size
+                            </label>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => setFontSize('small')}
+                                    className={`flex-1 rounded-md border p-2 text-sm ${fontSize === 'small'
+                                            ? 'border-primary bg-primary/10 text-primary'
+                                            : 'border-input bg-background hover:bg-secondary'
+                                        }`}
+                                >
+                                    Small
+                                </button>
+                                <button
+                                    onClick={() => setFontSize('medium')}
+                                    className={`flex-1 rounded-md border p-2 text-sm ${fontSize === 'medium'
+                                            ? 'border-primary bg-primary/10 text-primary'
+                                            : 'border-input bg-background hover:bg-secondary'
+                                        }`}
+                                >
+                                    Medium
+                                </button>
+                                <button
+                                    onClick={() => setFontSize('large')}
+                                    className={`flex-1 rounded-md border p-2 text-sm ${fontSize === 'large'
+                                            ? 'border-primary bg-primary/10 text-primary'
+                                            : 'border-input bg-background hover:bg-secondary'
+                                        }`}
+                                >
+                                    Large
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <button

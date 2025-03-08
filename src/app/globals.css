@@ -18,6 +18,9 @@
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #3b82f6;
+  --font-size-small: 0.875rem;
+  --font-size-medium: 1rem;
+  --font-size-large: 1.125rem;
 }
 
 @theme inline {
@@ -93,4 +96,38 @@ body {
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #3b82f6;
+}
+
+/* Font size classes */
+.text-small {
+  font-size: var(--font-size-small);
+}
+
+.text-medium {
+  font-size: var(--font-size-medium);
+}
+
+.text-large {
+  font-size: var(--font-size-large);
+}
+
+/* High contrast mode */
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card-background: #000000;
+  --card-foreground: #ffffff;
+  --primary: #ffff00;
+  --primary-foreground: #000000;
+  --secondary: #ffffff;
+  --secondary-foreground: #000000;
+  --muted: #ffffff;
+  --muted-foreground: #000000;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffff00;
 }
