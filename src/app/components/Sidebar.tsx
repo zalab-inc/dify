@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Message } from 'ai';
 import { useTheme } from './ThemeProvider';
 
@@ -28,6 +28,30 @@ interface SidebarProps {
     onClose: () => void;
 }
 
+// Tooltip component
+const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }) => {
+    const [show, setShow] = useState(false);
+
+    return (
+        <div className="relative inline-block">
+            <div
+                onMouseEnter={() => setShow(true)}
+                onMouseLeave={() => setShow(false)}
+                onFocus={() => setShow(true)}
+                onBlur={() => setShow(false)}
+            >
+                {children}
+            </div>
+            {show && (
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 text-xs rounded bg-foreground text-background whitespace-nowrap z-50">
+                    {text}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full -mt-1 border-4 border-transparent border-t-foreground"></div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const Sidebar: React.FC<SidebarProps> = ({
     currentMessages,
     currentFiles = [],
@@ -41,10 +65,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [isCreating, setIsCreating] = useState(false);
     const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [isRenaming, setIsRenaming] = useState<string | null>(null);
     const [renameTitle, setRenameTitle] = useState('');
     const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'alphabetical'>('newest');
     const { theme } = useTheme();
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Load conversations from localStorage
     useEffect(() => {
@@ -132,9 +166,24 @@ const Sidebar: React.FC<SidebarProps> = ({
         setSelectedConversation(conversation.id);
     };
 
+    // Close sort menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const sortMenu = document.getElementById('sort-menu');
+            if (sortMenu && !sortMenu.contains(event.target as Node) && !(event.target as Element).closest('[data-sort-button]')) {
+                sortMenu.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     // Filter conversations based on search query
     const filteredConversations = conversations.filter(
-        (conv) => conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+        (conv) => conv.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     );
 
     // Sort conversations
@@ -158,45 +207,49 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex flex-col h-full">
                 <div className="p-4 border-b border-border flex justify-between items-center">
                     <h2 className="text-lg font-semibold">Conversations</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-1 rounded-full hover:bg-secondary"
-                        aria-label="Close sidebar"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                    <Tooltip text="Close sidebar">
+                        <button
+                            onClick={onClose}
+                            className="p-1 rounded-full hover:bg-secondary"
+                            aria-label="Close sidebar"
                         >
-                            <path d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    </Tooltip>
                 </div>
 
                 <div className="p-4">
-                    <button
-                        onClick={onNewConversation}
-                        className="w-full mb-4 flex items-center justify-center gap-2 rounded-md bg-primary p-2 text-sm text-primary-foreground hover:bg-primary/90"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                    <Tooltip text="Start a new conversation">
+                        <button
+                            onClick={onNewConversation}
+                            className="w-full mb-4 flex items-center justify-center gap-2 rounded-md bg-primary p-2 text-sm text-primary-foreground hover:bg-primary/90"
                         >
-                            <path d="M12 5v14M5 12h14" />
-                        </svg>
-                        New Chat
-                    </button>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            New Chat
+                        </button>
+                    </Tooltip>
 
                     <div className="mb-4">
                         <div className="relative">
@@ -206,6 +259,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search conversations..."
                                 className="w-full p-2 pl-8 text-sm rounded-md border border-input bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                aria-label="Search conversations"
                             />
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -224,6 +278,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <button
                                     onClick={() => setSearchQuery('')}
                                     className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                                    aria-label="Clear search"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -251,26 +306,30 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </button>
 
                         <div className="relative">
-                            <button
-                                onClick={() => {
-                                    const menu = document.getElementById('sort-menu');
-                                    if (menu) menu.classList.toggle('hidden');
-                                }}
-                                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                            <Tooltip text="Sort conversations">
+                                <button
+                                    data-sort-button
+                                    onClick={() => {
+                                        const menu = document.getElementById('sort-menu');
+                                        if (menu) menu.classList.toggle('hidden');
+                                    }}
+                                    className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                    aria-label="Sort conversations"
                                 >
-                                    <path d="M3 6h18M7 12h10M11 18h4" />
-                                </svg>
-                            </button>
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M3 6h18M7 12h10M11 18h4" />
+                                    </svg>
+                                </button>
+                            </Tooltip>
                             <div
                                 id="sort-menu"
                                 className="absolute right-0 mt-1 w-40 rounded-md border border-border bg-background shadow-lg hidden z-10"
@@ -333,7 +392,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex-1 overflow-y-auto p-2">
                     {sortedConversations.length === 0 ? (
                         <p className="text-center text-sm text-muted-foreground p-4">
-                            {searchQuery ? 'No conversations found' : 'No saved conversations'}
+                            {debouncedSearchQuery ? 'No conversations found' : 'No saved conversations'}
                         </p>
                     ) : (
                         <ul className="space-y-1">
@@ -395,40 +454,46 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     )}
                                     {isRenaming !== conversation.id && (
                                         <div className="flex">
-                                            <button
-                                                onClick={(e) => startRenaming(conversation.id, conversation.title, e)}
-                                                className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-3.5 w-3.5"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
+                                            <Tooltip text="Rename conversation">
+                                                <button
+                                                    onClick={(e) => startRenaming(conversation.id, conversation.title, e)}
+                                                    className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                                                    aria-label="Rename conversation"
                                                 >
-                                                    <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={(e) => deleteConversation(conversation.id, e)}
-                                                className="ml-1 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-3.5 w-3.5"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="h-3.5 w-3.5"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                                    </svg>
+                                                </button>
+                                            </Tooltip>
+                                            <Tooltip text="Delete conversation">
+                                                <button
+                                                    onClick={(e) => deleteConversation(conversation.id, e)}
+                                                    className="ml-1 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                    aria-label="Delete conversation"
                                                 >
-                                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                                </svg>
-                                            </button>
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="h-3.5 w-3.5"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </Tooltip>
                                         </div>
                                     )}
                                 </li>
