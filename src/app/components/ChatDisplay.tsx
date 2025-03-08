@@ -5,10 +5,18 @@ import Message from './Message';
 interface ChatDisplayProps {
     messages: MessageType[];
     isLoading: boolean;
+    onStopGenerating?: () => void;
+    onRegenerateResponse?: () => void;
 }
 
-const ChatDisplay: React.FC<ChatDisplayProps> = ({ messages, isLoading }) => {
+const ChatDisplay: React.FC<ChatDisplayProps> = ({
+    messages,
+    isLoading,
+    onStopGenerating,
+    onRegenerateResponse
+}) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const lastMessageRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom when messages change
     useEffect(() => {
@@ -16,6 +24,10 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({ messages, isLoading }) => {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
+
+    // Get the last message for regeneration
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    const isLastMessageFromAI = lastMessage?.role === 'assistant';
 
     return (
         <div className="flex-1 overflow-y-auto p-4">
@@ -39,18 +51,68 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({ messages, isLoading }) => {
                 </div>
             ) : (
                 <>
-                    {messages.map((message) => (
-                        <Message key={message.id} message={message} />
+                    {messages.map((message, index) => (
+                        <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
+                            <Message message={message} />
+
+                            {/* Show controls for the last AI message */}
+                            {index === messages.length - 1 && message.role === 'assistant' && !isLoading && (
+                                <div className="flex justify-center mt-2 mb-4 space-x-2">
+                                    <button
+                                        onClick={onRegenerateResponse}
+                                        className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1 text-sm hover:bg-secondary"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                            className="mr-1 h-4 w-4"
+                                        >
+                                            <path
+                                                fillRule="evenodd"
+                                                d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z"
+                                                clipRule="evenodd"
+                                            />
+                                        </svg>
+                                        Regenerate
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     ))}
                     {isLoading && (
-                        <div className="flex justify-start mb-4">
-                            <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2 text-secondary-foreground rounded-bl-none">
-                                <div className="flex space-x-2">
-                                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></div>
-                                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: '0.2s' }}></div>
-                                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="mb-4">
+                            <div className="flex justify-start mb-2">
+                                <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2 text-secondary-foreground rounded-bl-none">
+                                    <div className="flex space-x-2">
+                                        <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></div>
+                                        <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: '0.2s' }}></div>
+                                        <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: '0.4s' }}></div>
+                                    </div>
                                 </div>
                             </div>
+                            {onStopGenerating && (
+                                <div className="flex justify-center">
+                                    <button
+                                        onClick={onStopGenerating}
+                                        className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1 text-sm hover:bg-secondary"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                            className="mr-1 h-4 w-4"
+                                        >
+                                            <path
+                                                fillRule="evenodd"
+                                                d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z"
+                                                clipRule="evenodd"
+                                            />
+                                        </svg>
+                                        Stop generating
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                     <div ref={messagesEndRef} />

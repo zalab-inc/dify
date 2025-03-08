@@ -23,6 +23,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<FileReference[]>([]);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // Initialize chat with localStorage history if available
   const localStorageKey = 'chat-history';
@@ -38,6 +39,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading chat history:', error);
     }
+    setIsFirstLoad(false);
   }, []);
 
   // Initialize chat with Vercel AI SDK
@@ -49,6 +51,8 @@ export default function Home() {
     isLoading,
     setMessages,
     setInput,
+    stop,
+    reload,
   } = useChat({
     initialMessages: storedMessages,
     body: {
@@ -63,18 +67,21 @@ export default function Home() {
         console.error('Error saving chat history:', error);
       }
     },
+    // Enable streaming for more responsive UI
+    api: '/api/chat',
+    id: 'chat',
   });
 
   // Update stored messages when messages change
   useEffect(() => {
-    if (messages.length > 0) {
+    if (!isFirstLoad && messages.length > 0) {
       try {
         localStorage.setItem(localStorageKey, JSON.stringify(messages));
       } catch (error) {
         console.error('Error saving chat history:', error);
       }
     }
-  }, [messages]);
+  }, [messages, isFirstLoad]);
 
   // Clear chat history
   const handleClearChat = () => {
@@ -102,6 +109,16 @@ export default function Home() {
   const handleLoadConversation = (messages: any[], files?: FileReference[]) => {
     setMessages(messages);
     setUploadedFiles(files || []);
+  };
+
+  // Stop generating response
+  const handleStopGenerating = () => {
+    stop();
+  };
+
+  // Regenerate response
+  const handleRegenerateResponse = () => {
+    reload();
   };
 
   // Close export menu when clicking outside
@@ -181,7 +198,12 @@ export default function Home() {
         </div>
       </header>
 
-      <ChatDisplay messages={messages} isLoading={isLoading} />
+      <ChatDisplay
+        messages={messages}
+        isLoading={isLoading}
+        onStopGenerating={handleStopGenerating}
+        onRegenerateResponse={handleRegenerateResponse}
+      />
       <ChatInput
         input={input}
         handleInputChange={handleInputChange}
