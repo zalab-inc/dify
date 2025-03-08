@@ -12,6 +12,8 @@ interface ChatDisplayProps {
 interface MessageFeedback {
     messageId: string;
     feedback: 'helpful' | 'not_helpful';
+    reason?: string;
+    comment?: string;
 }
 
 type RegenerateVariation = 'default' | 'shorter' | 'longer' | 'simpler' | 'detailed';
@@ -26,6 +28,9 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({
     const lastMessageRef = useRef<HTMLDivElement>(null);
     const [feedbacks, setFeedbacks] = useState<MessageFeedback[]>([]);
     const [showVariations, setShowVariations] = useState(false);
+    const [showDetailedFeedback, setShowDetailedFeedback] = useState<string | null>(null);
+    const [feedbackReason, setFeedbackReason] = useState<string>('');
+    const [feedbackComment, setFeedbackComment] = useState<string>('');
 
     // Auto-scroll to bottom when messages change
     useEffect(() => {
@@ -53,8 +58,40 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({
             setFeedbacks([...feedbacks, { messageId, feedback }]);
         }
 
-        // Here you could also send the feedback to your backend
-        console.log(`Feedback for message ${messageId}: ${feedback}`);
+        // Show detailed feedback form for not helpful responses
+        if (feedback === 'not_helpful') {
+            setShowDetailedFeedback(messageId);
+        } else {
+            setShowDetailedFeedback(null);
+            // Here you could also send the feedback to your backend
+            console.log(`Feedback for message ${messageId}: ${feedback}`);
+        }
+    };
+
+    // Submit detailed feedback
+    const submitDetailedFeedback = (messageId: string) => {
+        // Find the feedback
+        const existingFeedbackIndex = feedbacks.findIndex(f => f.messageId === messageId);
+
+        if (existingFeedbackIndex !== -1) {
+            // Update existing feedback with reason and comment
+            const updatedFeedbacks = [...feedbacks];
+            updatedFeedbacks[existingFeedbackIndex].reason = feedbackReason;
+            updatedFeedbacks[existingFeedbackIndex].comment = feedbackComment;
+            setFeedbacks(updatedFeedbacks);
+
+            // Here you could also send the detailed feedback to your backend
+            console.log(`Detailed feedback for message ${messageId}:`, {
+                feedback: 'not_helpful',
+                reason: feedbackReason,
+                comment: feedbackComment
+            });
+        }
+
+        // Reset form
+        setShowDetailedFeedback(null);
+        setFeedbackReason('');
+        setFeedbackComment('');
     };
 
     // Check if a message has feedback
@@ -124,8 +161,8 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({
                                         <button
                                             onClick={() => handleFeedback(message.id, 'helpful')}
                                             className={`inline-flex items-center rounded-md px-2 py-1 text-xs ${getMessageFeedback(message.id) === 'helpful'
-                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-background border border-border hover:bg-secondary'
+                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-background border border-border hover:bg-secondary'
                                                 }`}
                                         >
                                             <svg
@@ -141,8 +178,8 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({
                                         <button
                                             onClick={() => handleFeedback(message.id, 'not_helpful')}
                                             className={`inline-flex items-center rounded-md px-2 py-1 text-xs ${getMessageFeedback(message.id) === 'not_helpful'
-                                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                : 'bg-background border border-border hover:bg-secondary'
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                    : 'bg-background border border-border hover:bg-secondary'
                                                 }`}
                                         >
                                             <svg
@@ -156,6 +193,53 @@ const ChatDisplay: React.FC<ChatDisplayProps> = ({
                                             Not helpful
                                         </button>
                                     </div>
+
+                                    {/* Detailed feedback form */}
+                                    {showDetailedFeedback === message.id && (
+                                        <div className="w-full max-w-md mb-4 p-3 border border-border rounded-lg bg-background">
+                                            <h4 className="text-sm font-medium mb-2">Why wasn't this response helpful?</h4>
+                                            <div className="mb-3">
+                                                <select
+                                                    value={feedbackReason}
+                                                    onChange={(e) => setFeedbackReason(e.target.value)}
+                                                    className="w-full p-2 text-sm rounded-md border border-input bg-background"
+                                                >
+                                                    <option value="">Select a reason</option>
+                                                    <option value="not_relevant">Not relevant to my question</option>
+                                                    <option value="not_accurate">Information is not accurate</option>
+                                                    <option value="too_long">Response is too long</option>
+                                                    <option value="too_short">Response is too short</option>
+                                                    <option value="too_complex">Too complex or technical</option>
+                                                    <option value="too_simple">Too simple or basic</option>
+                                                    <option value="other">Other reason</option>
+                                                </select>
+                                            </div>
+                                            <div className="mb-3">
+                                                <textarea
+                                                    placeholder="Additional comments (optional)"
+                                                    value={feedbackComment}
+                                                    onChange={(e) => setFeedbackComment(e.target.value)}
+                                                    className="w-full p-2 text-sm rounded-md border border-input bg-background resize-none"
+                                                    rows={3}
+                                                />
+                                            </div>
+                                            <div className="flex justify-end space-x-2">
+                                                <button
+                                                    onClick={() => setShowDetailedFeedback(null)}
+                                                    className="px-3 py-1 text-sm rounded-md border border-border bg-background hover:bg-secondary"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={() => submitDetailedFeedback(message.id)}
+                                                    className="px-3 py-1 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                                                    disabled={!feedbackReason}
+                                                >
+                                                    Submit
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Regenerate button for last message */}
                                     {index === messages.length - 1 && !isLoading && (

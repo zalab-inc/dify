@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSettings } from './SettingsContext';
 
 interface ChatSettingsProps {
     temperature: number;
@@ -17,6 +18,8 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
     isOpen,
     onClose,
 }) => {
+    const { typingAnimationEnabled, setTypingAnimationEnabled } = useSettings();
+
     if (!isOpen) return null;
 
     return (
@@ -61,7 +64,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                     </select>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                     <label className="mb-2 block font-medium">
                         Temperature: {temperature.toFixed(1)}
                     </label>
@@ -78,6 +81,21 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                         <span>More Precise</span>
                         <span>More Creative</span>
                     </div>
+                </div>
+
+                <div className="mb-6">
+                    <label className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            checked={typingAnimationEnabled}
+                            onChange={(e) => setTypingAnimationEnabled(e.target.checked)}
+                            className="h-4 w-4 rounded border-input accent-primary"
+                        />
+                        <span className="text-sm">Enable typing animation</span>
+                    </label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Disable this for improved accessibility or if you prefer instant responses.
+                    </p>
                 </div>
 
                 <button

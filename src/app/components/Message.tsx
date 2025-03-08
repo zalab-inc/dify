@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Message as MessageType } from 'ai';
+import { useSettings } from './SettingsContext';
 
 interface MessageProps {
     message: MessageType;
@@ -7,13 +8,14 @@ interface MessageProps {
 
 const Message: React.FC<MessageProps> = ({ message }) => {
     const isUser = message.role === 'user';
+    const { typingAnimationEnabled } = useSettings();
     const [isTyping, setIsTyping] = useState(false);
     const [displayedContent, setDisplayedContent] = useState('');
     const [contentIndex, setContentIndex] = useState(0);
 
     // Simulate typing effect for AI messages
     useEffect(() => {
-        if (isUser) {
+        if (isUser || !typingAnimationEnabled) {
             setDisplayedContent(message.content);
             return;
         }
@@ -35,7 +37,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
         }, 10); // Adjust speed as needed
 
         return () => clearInterval(typingInterval);
-    }, [message.content, isUser, contentIndex]);
+    }, [message.content, isUser, contentIndex, typingAnimationEnabled]);
 
     // Format content with line breaks and code blocks
     const formatContent = (content: string) => {
@@ -61,8 +63,8 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                     : 'bg-secondary text-secondary-foreground rounded-bl-none'
                     }`}
             >
-                {formatContent(isUser ? message.content : displayedContent)}
-                {isTyping && !isUser && (
+                {formatContent(isUser || !typingAnimationEnabled ? message.content : displayedContent)}
+                {isTyping && !isUser && typingAnimationEnabled && (
                     <span className="inline-block ml-1 animate-pulse">▌</span>
                 )}
             </div>
