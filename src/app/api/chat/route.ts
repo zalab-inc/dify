@@ -11,7 +11,7 @@ export const runtime = 'edge';
 
 export async function POST(req: Request) {
     try {
-        const { messages, temperature = 0.7, model = 'gpt-3.5-turbo' } = await req.json();
+        const { messages, temperature = 0.7, model = 'gpt-3.5-turbo', systemPrompt = '' } = await req.json();
 
         // Validate the request
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -23,10 +23,15 @@ export async function POST(req: Request) {
             );
         }
 
+        // Prepare messages array with optional system prompt
+        const apiMessages = systemPrompt
+            ? [{ role: 'system', content: systemPrompt }, ...messages]
+            : messages;
+
         // Create a chat completion
         const response = await openai.chat.completions.create({
             model,
-            messages,
+            messages: apiMessages,
             temperature: parseFloat(temperature.toString()),
             stream: true,
         });

@@ -24,6 +24,7 @@ export default function Home() {
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<FileReference[]>([]);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [systemPrompt, setSystemPrompt] = useState('');
 
   // Initialize chat with localStorage history if available
   const localStorageKey = 'chat-history';
@@ -58,6 +59,7 @@ export default function Home() {
     body: {
       temperature,
       model,
+      systemPrompt,
     },
     onFinish: () => {
       // Save messages to localStorage when a response is received
@@ -66,6 +68,8 @@ export default function Home() {
       } catch (error) {
         console.error('Error saving chat history:', error);
       }
+      // Reset system prompt after completion
+      setSystemPrompt('');
     },
     // Enable streaming for more responsive UI
     api: '/api/chat',
@@ -116,8 +120,11 @@ export default function Home() {
     stop();
   };
 
-  // Regenerate response
-  const handleRegenerateResponse = () => {
+  // Regenerate response with optional variation
+  const handleRegenerateResponse = (variation?: string) => {
+    if (variation) {
+      setSystemPrompt(variation);
+    }
     reload();
   };
 
@@ -127,6 +134,28 @@ export default function Home() {
       const menu = document.getElementById('export-menu');
       if (menu && !menu.contains(event.target as Node)) {
         menu.classList.add('hidden');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Close regenerate variations menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if the click is outside any regenerate button or dropdown
+      if (!target.closest('[data-regenerate-menu]')) {
+        const regenerateButtons = document.querySelectorAll('[data-regenerate-menu]');
+        regenerateButtons.forEach(button => {
+          const dropdown = button.querySelector('[data-regenerate-dropdown]');
+          if (dropdown) {
+            dropdown.classList.add('hidden');
+          }
+        });
       }
     };
 
