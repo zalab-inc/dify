@@ -52,6 +52,16 @@ const Message: React.FC<MessageProps> = ({ message }) => {
         ));
     };
 
+    // Get model provider for display
+    const getModelProvider = () => {
+        if (!message.model) return null;
+
+        if (message.model.startsWith('claude')) {
+            return 'Anthropic';
+        }
+        return 'OpenAI';
+    };
+
     return (
         <div
             className={`flex ${isUser ? 'justify-end' : 'justify-start'
@@ -63,6 +73,11 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                     : 'bg-secondary text-secondary-foreground rounded-bl-none'
                     }`}
             >
+                {!isUser && message.model && (
+                    <div className="text-xs opacity-70 mb-1">
+                        {getModelProvider()} - {message.model}
+                    </div>
+                )}
                 {formatContent(isUser || !typingAnimationEnabled ? message.content : displayedContent)}
                 {isTyping && !isUser && typingAnimationEnabled && (
                     <span className="inline-block ml-1 animate-pulse">▌</span>

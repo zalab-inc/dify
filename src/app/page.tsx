@@ -45,6 +45,14 @@ export default function Home() {
     setIsFirstLoad(false);
   }, []);
 
+  // Determine API endpoint based on selected model
+  const getApiEndpoint = () => {
+    if (model.startsWith('claude')) {
+      return '/api/claude';
+    }
+    return '/api/chat';
+  };
+
   // Initialize chat with Vercel AI SDK
   const {
     messages,
@@ -74,7 +82,7 @@ export default function Home() {
       setSystemPrompt('');
     },
     // Enable streaming for more responsive UI
-    api: '/api/chat',
+    api: getApiEndpoint(),
     id: 'chat',
   });
 
@@ -88,6 +96,14 @@ export default function Home() {
       }
     }
   }, [messages, isFirstLoad]);
+
+  // Update API endpoint when model changes
+  useEffect(() => {
+    // This will trigger a reload of the chat with the new API endpoint
+    if (!isFirstLoad) {
+      reload();
+    }
+  }, [model, isFirstLoad, reload]);
 
   // Clear chat history
   const handleClearChat = () => {
@@ -172,6 +188,14 @@ export default function Home() {
     };
   }, []);
 
+  // Get model provider for display
+  const getModelProvider = () => {
+    if (model.startsWith('claude')) {
+      return 'Anthropic';
+    }
+    return 'OpenAI';
+  };
+
   return (
     <main className="flex h-screen flex-col bg-background text-foreground">
       <Sidebar
@@ -204,6 +228,9 @@ export default function Home() {
             </svg>
           </button>
           <h1 className="text-xl font-bold">AI Chatbot</h1>
+          <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+            {getModelProvider()}
+          </span>
         </div>
         <div className="flex space-x-2">
           <ThemeToggle />
@@ -255,7 +282,7 @@ export default function Home() {
             >
               <path
                 fillRule="evenodd"
-                d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
+                d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.07a3 3 0 01-2.991 2.77H8.084a3 3 0 01-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.196 51.196 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452zm-.355 5.945a.75.75 0 10-1.5.058l.347 9a.75.75 0 101.499-.058l-.346-9zm5.48.058a.75.75 0 10-1.498-.058l-.347 9a.75.75 0 001.5.058l.345-9z"
                 clipRule="evenodd"
               />
             </svg>
@@ -263,13 +290,17 @@ export default function Home() {
         </div>
       </header>
 
-      <div className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className="flex-1 overflow-hidden">
         <ChatDisplay
           messages={messages}
           isLoading={isLoading}
           onStopGenerating={handleStopGenerating}
           onRegenerateResponse={handleRegenerateResponse}
+          uploadedFiles={uploadedFiles}
         />
+      </div>
+
+      <div className="border-t border-border p-4">
         <ChatInput
           input={input}
           handleInputChange={handleInputChange}
@@ -278,23 +309,27 @@ export default function Home() {
         />
       </div>
 
-      <ChatSettings
-        temperature={temperature}
-        setTemperature={setTemperature}
-        model={model}
-        setModel={setModel}
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
+      {isSettingsOpen && (
+        <ChatSettings
+          temperature={temperature}
+          setTemperature={setTemperature}
+          model={model}
+          setModel={setModel}
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
 
-      <ConversationManager
-        currentMessages={messages}
-        currentFiles={uploadedFiles}
-        onLoadConversation={handleLoadConversation}
-        onNewConversation={handleClearChat}
-        isOpen={isConversationsOpen}
-        onClose={() => setIsConversationsOpen(false)}
-      />
+      {isConversationsOpen && (
+        <ConversationManager
+          currentMessages={messages}
+          currentFiles={uploadedFiles}
+          onLoadConversation={handleLoadConversation}
+          onNewConversation={handleClearChat}
+          isOpen={isConversationsOpen}
+          onClose={() => setIsConversationsOpen(false)}
+        />
+      )}
     </main>
   );
 }

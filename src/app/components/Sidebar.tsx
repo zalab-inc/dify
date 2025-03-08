@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, KeyboardEvent } from 'react';
 import { Message } from 'ai';
 import { useTheme } from './ThemeProvider';
 
@@ -69,12 +69,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [isRenaming, setIsRenaming] = useState<string | null>(null);
     const [renameTitle, setRenameTitle] = useState('');
     const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'alphabetical'>('newest');
+    const [focusedConversationIndex, setFocusedConversationIndex] = useState<number>(-1);
+    const [isSearching, setIsSearching] = useState(false);
     const { theme } = useTheme();
+
+    // Refs for keyboard navigation
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const conversationListRef = useRef<HTMLUListElement>(null);
+    const conversationRefs = useRef<(HTMLLIElement | null)[]>([]);
 
     // Debounce search query
     useEffect(() => {
+        setIsSearching(true);
         const timer = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery);
+            setIsSearching(false);
         }, 300);
 
         return () => clearTimeout(timer);
@@ -91,6 +100,27 @@ const Sidebar: React.FC<SidebarProps> = ({
             console.error('Error loading conversations:', error);
         }
     }, []);
+
+    // Load sort order from localStorage
+    useEffect(() => {
+        try {
+            const savedSortOrder = localStorage.getItem('conversation-sort-order');
+            if (savedSortOrder) {
+                setSortOrder(savedSortOrder as 'newest' | 'oldest' | 'alphabetical');
+            }
+        } catch (error) {
+            console.error('Error loading sort order:', error);
+        }
+    }, []);
+
+    // Save sort order to localStorage
+    useEffect(() => {
+        try {
+            localStorage.setItem('conversation-sort-order', sortOrder);
+        } catch (error) {
+            console.error('Error saving sort order:', error);
+        }
+    }, [sortOrder]);
 
     // Save current conversation
     const saveCurrentConversation = () => {
@@ -181,13 +211,60 @@ const Sidebar: React.FC<SidebarProps> = ({
         };
     }, []);
 
+    // Handle keyboard navigation
+    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        const sortedConversations = [...filteredConversations].sort(sortConversations);
+
+        // If we're renaming, don't handle keyboard navigation
+        if (isRenaming) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (focusedConversationIndex < sortedConversations.length - 1) {
+                    setFocusedConversationIndex(prev => prev + 1);
+                    conversationRefs.current[focusedConversationIndex + 1]?.focus();
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                if (focusedConversationIndex > 0) {
+                    setFocusedConversationIndex(prev => prev - 1);
+                    conversationRefs.current[focusedConversationIndex - 1]?.focus();
+                } else if (focusedConversationIndex === 0) {
+                    // Move focus to search input
+                    searchInputRef.current?.focus();
+                    setFocusedConversationIndex(-1);
+                }
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (focusedConversationIndex >= 0 && focusedConversationIndex < sortedConversations.length) {
+                    loadConversation(sortedConversations[focusedConversationIndex]);
+                }
+                break;
+            case '/':
+                // Quick shortcut to focus search
+                if (document.activeElement !== searchInputRef.current) {
+                    e.preventDefault();
+                    searchInputRef.current?.focus();
+                }
+                break;
+            case 'Escape':
+                // Close sidebar
+                e.preventDefault();
+                onClose();
+                break;
+        }
+    };
+
     // Filter conversations based on search query
     const filteredConversations = conversations.filter(
         (conv) => conv.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     );
 
     // Sort conversations
-    const sortedConversations = [...filteredConversations].sort((a, b) => {
+    const sortConversations = (a: Conversation, b: Conversation) => {
         switch (sortOrder) {
             case 'newest':
                 return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -198,12 +275,23 @@ const Sidebar: React.FC<SidebarProps> = ({
             default:
                 return 0;
         }
-    });
+    };
+
+    // Sorted conversations
+    const sortedConversations = [...filteredConversations].sort(sortConversations);
+
+    // Update conversation refs when sorted conversations change
+    useEffect(() => {
+        conversationRefs.current = conversationRefs.current.slice(0, sortedConversations.length);
+    }, [sortedConversations]);
 
     if (!isOpen) return null;
 
     return (
-        <div className={`fixed inset-y-0 left-0 w-64 bg-background border-r border-border transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} z-20`}>
+        <div
+            className={`fixed inset-y-0 left-0 w-64 bg-background border-r border-border transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} z-20`}
+            onKeyDown={handleKeyDown}
+        >
             <div className="flex flex-col h-full">
                 <div className="p-4 border-b border-border flex justify-between items-center">
                     <h2 className="text-lg font-semibold">Conversations</h2>
@@ -257,13 +345,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search conversations..."
+                                placeholder="Search conversations... (Press '/')"
                                 className="w-full p-2 pl-8 text-sm rounded-md border border-input bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                                 aria-label="Search conversations"
+                                ref={searchInputRef}
+                                onFocus={() => setFocusedConversationIndex(-1)}
                             />
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 absolute left-2 top-2.5 text-muted-foreground"
+                                className={`h-4 w-4 absolute left-2 top-2.5 ${isSearching ? 'animate-pulse text-primary' : 'text-muted-foreground'}`}
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -378,6 +468,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 onChange={(e) => setNewTitle(e.target.value)}
                                 placeholder="Enter conversation title"
                                 className="w-full p-2 text-sm rounded-md border border-input bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        saveCurrentConversation();
+                                    }
+                                    if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        setIsCreating(false);
+                                    }
+                                }}
                             />
                             <button
                                 onClick={saveCurrentConversation}
@@ -395,15 +495,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {debouncedSearchQuery ? 'No conversations found' : 'No saved conversations'}
                         </p>
                     ) : (
-                        <ul className="space-y-1">
-                            {sortedConversations.map((conversation) => (
+                        <ul className="space-y-1" ref={conversationListRef}>
+                            {sortedConversations.map((conversation, index) => (
                                 <li
                                     key={conversation.id}
+                                    ref={(el) => (conversationRefs.current[index] = el)}
                                     onClick={() => loadConversation(conversation)}
+                                    onFocus={() => setFocusedConversationIndex(index)}
+                                    tabIndex={0}
                                     className={`flex items-center justify-between rounded-md p-2 text-sm cursor-pointer ${selectedConversation === conversation.id
                                             ? 'bg-primary/10 text-primary'
-                                            : 'hover:bg-secondary'
+                                            : focusedConversationIndex === index
+                                                ? 'bg-secondary/80'
+                                                : 'hover:bg-secondary'
                                         }`}
+                                    role="button"
+                                    aria-selected={selectedConversation === conversation.id}
                                 >
                                     {isRenaming === conversation.id ? (
                                         <div className="flex-1 pr-2">
@@ -418,6 +525,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                         setIsRenaming(null);
                                                         setRenameTitle('');
                                                     }
+                                                    e.stopPropagation();
                                                 }}
                                                 className="w-full p-1 text-sm rounded-md border border-input bg-background focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                                                 autoFocus
@@ -509,6 +617,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <span className="text-sm">AI Chatbot</span>
                         </div>
                         <span className="text-xs text-muted-foreground">v1.0.0</span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                        <p>Press <kbd className="px-1 py-0.5 rounded bg-secondary text-secondary-foreground">/</kbd> to search</p>
                     </div>
                 </div>
             </div>

@@ -68,9 +68,16 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                                 onChange={(e) => setModel(e.target.value)}
                                 className="w-full rounded-lg border border-input bg-background p-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                             >
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                                <option value="gpt-4">GPT-4</option>
-                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <optgroup label="OpenAI Models">
+                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                    <option value="gpt-4">GPT-4</option>
+                                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                </optgroup>
+                                <optgroup label="Anthropic Models">
+                                    <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                                    <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                                    <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -136,8 +143,8 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                                 <button
                                     onClick={() => setFontSize('small')}
                                     className={`flex-1 rounded-md border p-2 text-sm ${fontSize === 'small'
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-input bg-background hover:bg-secondary'
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-input bg-background hover:bg-secondary'
                                         }`}
                                 >
                                     Small
@@ -145,8 +152,8 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                                 <button
                                     onClick={() => setFontSize('medium')}
                                     className={`flex-1 rounded-md border p-2 text-sm ${fontSize === 'medium'
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-input bg-background hover:bg-secondary'
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-input bg-background hover:bg-secondary'
                                         }`}
                                 >
                                     Medium
@@ -154,8 +161,8 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                                 <button
                                     onClick={() => setFontSize('large')}
                                     className={`flex-1 rounded-md border p-2 text-sm ${fontSize === 'large'
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-input bg-background hover:bg-secondary'
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-input bg-background hover:bg-secondary'
                                         }`}
                                 >
                                     Large
