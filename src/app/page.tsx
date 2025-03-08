@@ -10,12 +10,19 @@ import ConversationManager from './components/ConversationManager';
 import ExportButton from './components/ExportButton';
 import FileUploadButton from './components/FileUploadButton';
 
+interface FileReference {
+  name: string;
+  content: string;
+  uploadedAt: string;
+}
+
 export default function Home() {
   // Chat settings state
   const [temperature, setTemperature] = useState(0.7);
   const [model, setModel] = useState('gpt-3.5-turbo');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConversationsOpen, setIsConversationsOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<FileReference[]>([]);
 
   // Initialize chat with localStorage history if available
   const localStorageKey = 'chat-history';
@@ -72,13 +79,29 @@ export default function Home() {
   // Clear chat history
   const handleClearChat = () => {
     setMessages([]);
+    setUploadedFiles([]);
     localStorage.removeItem(localStorageKey);
   };
 
   // Handle file upload
   const handleFileContent = (content: string, fileName: string) => {
+    // Add file to uploaded files
+    const newFile: FileReference = {
+      name: fileName,
+      content,
+      uploadedAt: new Date().toISOString(),
+    };
+    setUploadedFiles((prev) => [...prev, newFile]);
+
+    // Create message with file content
     const fileMessage = `I've uploaded a file named "${fileName}" with the following content:\n\n${content}`;
     setInput(fileMessage);
+  };
+
+  // Load conversation with files
+  const handleLoadConversation = (messages: any[], files?: FileReference[]) => {
+    setMessages(messages);
+    setUploadedFiles(files || []);
   };
 
   // Close export menu when clicking outside
@@ -177,7 +200,8 @@ export default function Home() {
 
       <ConversationManager
         currentMessages={messages}
-        onLoadConversation={setMessages}
+        currentFiles={uploadedFiles}
+        onLoadConversation={handleLoadConversation}
         onNewConversation={handleClearChat}
         isOpen={isConversationsOpen}
         onClose={() => setIsConversationsOpen(false)}
