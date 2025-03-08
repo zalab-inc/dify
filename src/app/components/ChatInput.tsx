@@ -24,11 +24,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
     return (
         <form
             onSubmit={handleSubmit}
-            className="flex items-end gap-2 border-t border-gray-200 p-4 bg-white"
+            className="flex items-end gap-2 border-t border-border p-4 bg-background"
         >
             <div className="relative flex-grow">
                 <textarea
-                    className="w-full resize-none rounded-lg border border-gray-300 p-3 pr-12 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full resize-none rounded-lg border border-input p-3 pr-12 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background text-foreground"
                     placeholder="Type your message..."
                     rows={1}
                     value={input}
@@ -47,7 +47,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    className="absolute bottom-2 right-2 rounded-full bg-blue-500 p-1 text-white transition-colors hover:bg-blue-600 disabled:bg-gray-300"
+                    className="absolute bottom-2 right-2 rounded-full bg-primary p-1 text-primary-foreground transition-colors hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"

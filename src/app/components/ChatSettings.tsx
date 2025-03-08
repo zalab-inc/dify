@@ -20,13 +20,13 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-lg border border-border">
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold">Chat Settings</h2>
                     <button
                         onClick={onClose}
-                        className="rounded-full p-1 hover:bg-gray-200"
+                        className="rounded-full p-1 hover:bg-secondary"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +53,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                         id="model"
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-input bg-background p-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
                         <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                         <option value="gpt-4">GPT-4</option>
@@ -72,9 +72,9 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                         step="0.1"
                         value={temperature}
                         onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                        className="w-full"
+                        className="w-full accent-primary"
                     />
-                    <div className="flex justify-between text-xs text-gray-500">
+                    <div className="flex justify-between text-xs text-muted-foreground">
                         <span>More Precise</span>
                         <span>More Creative</span>
                     </div>
@@ -82,7 +82,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
 
                 <button
                     onClick={onClose}
-                    className="w-full rounded-lg bg-blue-500 py-2 text-white transition-colors hover:bg-blue-600"
+                    className="w-full rounded-lg bg-primary py-2 text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                     Save Settings
                 </button>

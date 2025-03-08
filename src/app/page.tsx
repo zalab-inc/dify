@@ -5,12 +5,17 @@ import { useChat } from 'ai/react';
 import ChatDisplay from './components/ChatDisplay';
 import ChatInput from './components/ChatInput';
 import ChatSettings from './components/ChatSettings';
+import { ThemeToggle } from './components/ThemeToggle';
+import ConversationManager from './components/ConversationManager';
+import ExportButton from './components/ExportButton';
+import FileUploadButton from './components/FileUploadButton';
 
 export default function Home() {
   // Chat settings state
   const [temperature, setTemperature] = useState(0.7);
   const [model, setModel] = useState('gpt-3.5-turbo');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isConversationsOpen, setIsConversationsOpen] = useState(false);
 
   // Initialize chat with localStorage history if available
   const localStorageKey = 'chat-history';
@@ -36,6 +41,7 @@ export default function Home() {
     handleSubmit,
     isLoading,
     setMessages,
+    setInput,
   } = useChat({
     initialMessages: storedMessages,
     body: {
@@ -69,14 +75,53 @@ export default function Home() {
     localStorage.removeItem(localStorageKey);
   };
 
+  // Handle file upload
+  const handleFileContent = (content: string, fileName: string) => {
+    const fileMessage = `I've uploaded a file named "${fileName}" with the following content:\n\n${content}`;
+    setInput(fileMessage);
+  };
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const menu = document.getElementById('export-menu');
+      if (menu && !menu.contains(event.target as Node)) {
+        menu.classList.add('hidden');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
-    <main className="flex h-screen flex-col bg-white">
-      <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+    <main className="flex h-screen flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <h1 className="text-xl font-bold">AI Chatbot</h1>
         <div className="flex space-x-2">
+          <ThemeToggle />
+          <FileUploadButton onFileContent={handleFileContent} />
+          <ExportButton messages={messages} />
+          <button
+            onClick={() => setIsConversationsOpen(true)}
+            className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Conversations"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-5 w-5"
+            >
+              <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875a1.875 1.875 0 01-1.875-1.875V5.25A3.75 3.75 0 009 1.5H5.625z" />
+              <path d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
+            </svg>
+          </button>
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
             aria-label="Settings"
           >
             <svg
@@ -94,7 +139,7 @@ export default function Home() {
           </button>
           <button
             onClick={handleClearChat}
-            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
             aria-label="Clear chat"
           >
             <svg
@@ -128,6 +173,14 @@ export default function Home() {
         setModel={setModel}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      <ConversationManager
+        currentMessages={messages}
+        onLoadConversation={setMessages}
+        onNewConversation={handleClearChat}
+        isOpen={isConversationsOpen}
+        onClose={() => setIsConversationsOpen(false)}
       />
     </main>
   );
